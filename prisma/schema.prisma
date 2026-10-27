@@ -1,0 +1,132 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ScheduleAction {
+  TURN_ON
+  TURN_OFF
+}
+
+enum ScheduleRunStatus {
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  name      String
+  password  String
+  role      Role       @default(USER)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  campuses  Campus[]
+  schedules Schedule[]
+
+  @@map("users")
+}
+
+model Campus {
+  id        String   @id @default(uuid())
+  slug      String
+  name      String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  blocks    Block[]
+
+  @@unique([ownerId, slug])
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  slug      String
+  name      String
+  campus    Campus   @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  campusId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rooms     Room[]
+
+  @@unique([campusId, slug])
+}
+
+model Room {
+  id          String       @id @default(uuid())
+  slug        String
+  name        String
+  block       Block        @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  blockId     String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  controllers Controller[]
+  schedules   Schedule[]
+
+  @@unique([blockId, slug])
+}
+
+model Controller {
+  id        String   @id @default(uuid())
+  slug      String
+  name      String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roomId, slug])
+}
+
+model Schedule {
+  id          String         @id @default(uuid())
+  slug        String
+  name        String
+  room        Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId      String
+  action      ScheduleAction
+  /// Dias da semana em que o agendamento roda: 0 = domingo ... 6 = sábado.
+  daysOfWeek  Int[]
+  /// Horário local no formato "HH:mm" (24h), interpretado em `timezone`.
+  time        String
+  timezone    String         @default("America/Sao_Paulo")
+  /// Janela de validade opcional (ex.: apenas durante o semestre letivo).
+  startsAt    DateTime?
+  endsAt      DateTime?
+  enabled     Boolean        @default(true)
+  lastRunAt   DateTime?
+  createdBy   User           @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  runs        ScheduleRun[]
+
+  @@unique([roomId, slug])
+  @@index([enabled, time])
+}
+
+model ScheduleRun {
+  id           String            @id @default(uuid())
+  schedule     Schedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  scheduleId   String
+  status       ScheduleRunStatus
+  /// Instante em que o agendamento deveria ter disparado.
+  scheduledFor DateTime
+  ranAt        DateTime          @default(now())
+  error        String?
+
+  @@unique([scheduleId, scheduledFor])
+  @@index([scheduleId, ranAt])
+}

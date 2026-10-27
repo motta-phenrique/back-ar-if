@@ -1,0 +1,23 @@
+version: "3.8"
+
+services: 
+  postgres:
+    container_name: nest-clean-architecture
+    image: postgres
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: nest-clean
+      PGDATA: /data/postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./data/pg:/data/postgres
+
+  redis:
+    container_name: nest-redis
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
