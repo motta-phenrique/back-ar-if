@@ -1,15 +1,24 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 import { CreateRoomDto } from "./dto/create-room";
 import { RoomRepository } from "./repositories/room.repository";
 import { CacheRepository } from "@/infra/cache/cache-repository";
 import { slugify } from "@/infra/utils/slug";
 import { RoomOutput, roomOutputSchema } from "./dto/room-output";
+import { SendCommandDto } from "./dto/send-command";
+import { ControllerStateService } from "@/infra/dispatch/controller-state.service";
 
 @Injectable()
 export class RoomService {
   constructor(
     private readonly roomRepository: RoomRepository,
     private readonly cache: CacheRepository,
+    private readonly controllerState: ControllerStateService,
   ) {}
 
   private cacheKey(ownerId: string, id: string) {
@@ -80,6 +89,40 @@ export class RoomService {
     await this.cache.set(this.cacheKey(ownerId, id), JSON.stringify(output));
 
     return output;
+  }
+
+  /**
+   * Acionamento manual (clique no front). Mesmo envio do worker de agendamento,
+   * mas síncrono: quem clicou recebe o erro na hora em vez de um retry
+   * silencioso em segundo plano.
+   */
+  async sendCommand(
+    ownerId: string,
+    id: string,
+    body: SendCommandDto,
+  ): Promise<void> {
+    const room = await this.roomRepository.findByIdAndOwnerWithControllers(
+      id,
+      ownerId,
+    );
+
+    if (!room) {
+      throw new NotFoundException("Room not found");
+    }
+
+    if (room.controllers.length === 0) {
+      throw new UnprocessableEntityException("Room has no controllers");
+    }
+
+    try {
+      for (const controller of room.controllers) {
+        await this.controllerState.apply(controller, {
+          power: body.action === "TURN_ON",
+        });
+      }
+    } catch (error) {
+      throw new ServiceUnavailableException((error as Error).message);
+    }
   }
 
   async listByBlock(ownerId: string, blockId: string): Promise<RoomOutput[]> {

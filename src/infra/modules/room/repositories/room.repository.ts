@@ -34,6 +34,22 @@ export class RoomRepository {
     });
   }
 
+  async findByIdAndOwnerWithControllers(id: string, ownerId: string) {
+    return await this.prisma.room.findFirst({
+      where: {
+        id,
+        block: {
+          campus: {
+            ownerId,
+          },
+        },
+      },
+      include: {
+        controllers: true,
+      },
+    });
+  }
+
   async findBySlugAndBlock(slug: string, blockId: string) {
     return await this.prisma.room.findUnique({
       where: {

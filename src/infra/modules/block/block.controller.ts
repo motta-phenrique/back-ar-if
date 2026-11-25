@@ -21,7 +21,7 @@ export class BlockController {
     return this.blockService.create(user.sub, campusId, body);
   }
 
-  @Get("campus/:campusId")
+  @Get("/:campusId")
   async listByCampus(
     @CurrentUser() user: TokenPayload,
     @Param("campusId") campusId: string,

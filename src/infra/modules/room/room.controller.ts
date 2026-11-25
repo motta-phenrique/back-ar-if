@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import { RoomService } from "./room.service";
 import { AuthGuard } from "@nestjs/passport";
 import { CurrentUser } from "@/infra/auth/current-user-decorater";
@@ -6,6 +14,8 @@ import type { TokenPayload } from "@/infra/auth/jwt.strategy";
 import type { CreateRoomDto } from "./dto/create-room";
 import { ZodValidationPipe } from "@/infra/pipes/zod-validation-pipes";
 import { createRoomBodySchema } from "./dto/create-room";
+import { sendCommandBodySchema } from "./dto/send-command";
+import type { SendCommandDto } from "./dto/send-command";
 
 @UseGuards(AuthGuard("jwt"))
 @Controller("room")
@@ -27,6 +37,16 @@ export class RoomController {
     @Param("blockId") blockId: string,
   ) {
     return this.roomService.listByBlock(user.sub, blockId);
+  }
+
+  @Post(":id/command")
+  @HttpCode(204)
+  async sendCommand(
+    @CurrentUser() user: TokenPayload,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(sendCommandBodySchema)) body: SendCommandDto,
+  ) {
+    await this.roomService.sendCommand(user.sub, id, body);
   }
 
   @Get(":id")

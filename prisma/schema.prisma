@@ -24,6 +24,20 @@ enum ScheduleRunStatus {
   SKIPPED
 }
 
+enum AcMode {
+  HEAT
+  DRY
+  COOL
+  FAN
+}
+
+enum AcFan {
+  AUTO
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model User {
   id        String     @id @default(uuid())
   email     String     @unique
@@ -86,6 +100,16 @@ model Controller {
   roomId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  /// Último estado enviado ao aparelho. O protocolo IR manda o estado inteiro
+  /// a cada comando, então mudar só a temperatura reenvia o resto daqui.
+  power           Boolean @default(false)
+  mode            AcMode  @default(COOL)
+  temp            Int     @default(23)
+  fan             AcFan   @default(AUTO)
+  swingVertical   Boolean @default(false)
+  swingHorizontal Boolean @default(false)
+  turbo           Boolean @default(false)
 
   @@unique([roomId, slug])
 }

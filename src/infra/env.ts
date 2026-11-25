@@ -8,6 +8,9 @@ export const envSchema = z.object({
   REDIS_HOST: z.string().default("localhost"),
   REDIS_PORT: z.coerce.number().default(6379),
   REDIS_DB: z.coerce.number().default(0),
+  MQTT_URL: z.string().default("mqtt://localhost:1883"),
+  MQTT_USERNAME: z.string().optional(),
+  MQTT_PASSWORD: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

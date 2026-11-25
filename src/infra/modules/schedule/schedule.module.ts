@@ -4,23 +4,18 @@ import { ScheduleService } from "./schedule.service";
 import { ScheduleRepository } from "./repositories/schedule.repository";
 import { SchedulePlanner } from "./schedule.planner";
 import { ScheduleWorker } from "./schedule.worker";
-import { ControllerDispatcher } from "./dispatch/controller-dispatcher";
-import { LoggingControllerDispatcher } from "./dispatch/logging-controller-dispatcher";
 import { CacheModule } from "@/infra/cache/cache.module";
 import { QueueModule } from "@/infra/queue/queue.module";
+import { DispatchModule } from "@/infra/dispatch/dispatch.module";
 
 @Module({
-  imports: [CacheModule, QueueModule],
+  imports: [CacheModule, QueueModule, DispatchModule],
   controllers: [ScheduleController],
   providers: [
     ScheduleService,
     ScheduleRepository,
     SchedulePlanner,
     ScheduleWorker,
-    {
-      provide: ControllerDispatcher,
-      useClass: LoggingControllerDispatcher,
-    },
   ],
 })
 export class ScheduleModule {}

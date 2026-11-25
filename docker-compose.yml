@@ -2,7 +2,7 @@ version: "3.8"
 
 services: 
   postgres:
-    container_name: nest-clean-architecture
+    container_name: ar-if
     image: postgres
     environment:
       POSTGRES_USER: docker
@@ -21,3 +21,11 @@ services:
       - "6379:6379"
     volumes:
       - ./data/redis:/data
+
+  mosquitto:
+    container_name: nest-mosquitto
+    image: eclipse-mosquitto:2
+    # Config embutida na imagem: escuta em 1883 e aceita conexão anônima. Só para dev.
+    command: mosquitto -c /mosquitto-no-auth.conf
+    ports:
+      - "1883:1883"

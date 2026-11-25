@@ -7,6 +7,7 @@ import { AuthModule } from "./auth/auth.module";
 import { CampusModule } from "./modules/campus/campus.module";
 import { BlockModule } from "./modules/block/block.module";
 import { RoomModule } from "./modules/room/room.module";
+import { ControllerModule } from "./modules/controller/controller.module";
 import { ScheduleModule } from "./modules/schedule/schedule.module";
 import { CacheModule } from "./cache/cache.module";
 import { QueueModule } from "./queue/queue.module";
@@ -29,6 +30,7 @@ import { ScheduleModule as CronModule } from "@nestjs/schedule";
     CampusModule,
     BlockModule,
     RoomModule,
+    ControllerModule,
     ScheduleModule
   ],
   controllers: [],

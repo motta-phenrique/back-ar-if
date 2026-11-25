@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { OnWorkerEvent, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
 import { ScheduleRepository } from "./repositories/schedule.repository";
-import { ControllerDispatcher } from "./dispatch/controller-dispatcher";
+import { ControllerStateService } from "@/infra/dispatch/controller-state.service";
 import { SCHEDULE_DISPATCH_QUEUE } from "@/infra/queue/queue-names";
 import { ScheduleDispatchJob } from "@/infra/queue/schedule-dispatch-job";
 
@@ -12,7 +12,7 @@ export class ScheduleWorker extends WorkerHost {
 
   constructor(
     private readonly scheduleRepository: ScheduleRepository,
-    private readonly dispatcher: ControllerDispatcher,
+    private readonly controllerState: ControllerStateService,
   ) {
     super();
   }
@@ -64,14 +64,12 @@ export class ScheduleWorker extends WorkerHost {
     }
 
     // Um controlador que falha derruba o job inteiro, e a tentativa seguinte
-    // reenvia para todos. É aceitável porque ligar um aparelho já ligado não
-    // tem efeito — o comando é idempotente no aparelho.
+    // reenvia para todos. É aceitável porque o IR manda o estado inteiro —
+    // reenviar o mesmo estado não muda nada no aparelho. Liga no último estado
+    // usado (temperatura, modo etc.), só troca o power.
     for (const controller of controllers) {
-      await this.dispatcher.send({
-        controllerId: controller.id,
-        controllerSlug: controller.slug,
-        roomId: schedule.roomId,
-        action,
+      await this.controllerState.apply(controller, {
+        power: action === "TURN_ON",
       });
     }
 
